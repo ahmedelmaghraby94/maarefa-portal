@@ -91,7 +91,7 @@ window.changeUser=async(id,status)=>{
  if(error){adminMsg.textContent='تعذر تحديث الحساب: '+error.message;adminMsg.style.color='#a52222';return}
  adminMsg.textContent='تم تحديث حالة الحساب.';adminMsg.style.color='#177245';loadUsers();
 };
-async function init(){const {data}=await sb.auth.getSession();await checkAccess(data.session?data.session.user:null)}
+async function init(){try{const {data:{user},error}=await sb.auth.getUser();if(error)throw error;await checkAccess(user||null)}catch(e){console.error('Auth init error',e);setMsg('تعذر التحقق من حالة الحساب: '+(e.message||'خطأ غير معروف'))}}
 sb.auth.onAuthStateChange((event,session)=>{if(event==='SIGNED_OUT')checkAccess(null);});
 init();
 </script></body></html><!-- deployment refresh 4 -->
