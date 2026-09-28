@@ -38,7 +38,7 @@ const SUPABASE_KEY='sb_publishable_s2JZT0K7t5vo3DIc5YOlkg_R1wS4Fso';
 const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 const overlay=document.getElementById('authOverlay'), form=document.getElementById('authForm'), fullName=document.getElementById('fullName'), email=document.getElementById('email'), password=document.getElementById('password'), submit=document.getElementById('authSubmit'), msg=document.getElementById('authMsg'), loginTab=document.getElementById('loginTab'), registerTab=document.getElementById('registerTab'), authUser=document.getElementById('authUser'), logoutBtn=document.getElementById('logoutBtn'), adminOpen=document.getElementById('adminOpen'), adminPanel=document.getElementById('adminPanel'), adminClose=document.getElementById('adminClose'), usersWrap=document.getElementById('usersWrap'), adminMsg=document.getElementById('adminMsg');
 const passwordToggle=document.getElementById('passwordToggle'), forgotPassword=document.getElementById('forgotPassword');
-let mode='login', recoveryMode=false;
+let mode='login', recoveryMode=(location.hash.includes('type=recovery')||new URLSearchParams(location.search).has('code'));
 function setMsg(t,ok=false){msg.textContent=t;msg.style.color=ok?'#177245':'#a52222'}
 function setMode(m){recoveryMode=false;mode=m;loginTab.classList.toggle('active',m==='login');registerTab.classList.toggle('active',m==='register');fullName.style.display=m==='register'?'block':'none';fullName.required=m==='register';submit.textContent=m==='register'?'إنشاء الحساب':'دخول';password.autocomplete=m==='register'?'new-password':'current-password';password.type='password';passwordToggle.textContent='إظهار';passwordToggle.setAttribute('aria-label','إظهار الرقم السري');forgotPassword.style.display=m==='login'?'block':'none';email.readOnly=false;setMsg('')}
 loginTab.onclick=()=>setMode('login');registerTab.onclick=()=>setMode('register');
@@ -97,7 +97,7 @@ window.changeUser=async(id,status)=>{
  if(error){adminMsg.textContent='تعذر تحديث الحساب: '+error.message;adminMsg.style.color='#a52222';return}
  adminMsg.textContent='تم تحديث حالة الحساب.';adminMsg.style.color='#177245';loadUsers();
 };
-async function init(){try{const {data:{user},error}=await sb.auth.getUser();if(error)throw error;await checkAccess(user||null)}catch(e){console.error('Auth init error',e);setMsg('')}}
+async function init(){try{const {data:{user},error}=await sb.auth.getUser();if(error)throw error;if(recoveryMode){showRecoveryForm();return}await checkAccess(user||null)}catch(e){console.error('Auth init error',e);setMsg('')}}
 sb.auth.onAuthStateChange((event,session)=>{if(event==='PASSWORD_RECOVERY'){showRecoveryForm();return}if(event==='SIGNED_OUT'&&!recoveryMode)checkAccess(null);});
 init();
 </script></body></html><!-- deployment refresh 4 -->
