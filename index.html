@@ -14,9 +14,43 @@ loginTab.onclick=()=>setMode('login');registerTab.onclick=()=>setMode('register'
 form.onsubmit=async e=>{e.preventDefault();submit.disabled=true;setMsg('جاري المعالجة...',true);try{const action=mode==='register'?'register':'login',r=await api(action,{method:'POST',body:JSON.stringify({name:fullName.value.trim(),email:email.value.trim(),password:password.value})}),d=await r.json();if(!r.ok){setMsg(d.message||'تعذر تنفيذ الطلب');return}if(action==='register'){setMsg(d.message,true);setMode('login');email.value=email.value.trim().toLowerCase()}else enter(d.user)}catch{setMsg('تعذر الاتصال بالخادم.')}finally{submit.disabled=false}};
 logoutBtn.onclick=async()=>{await api('logout',{method:'POST'});location.reload()};adminOpen.onclick=()=>{adminPanel.style.display='grid';loadUsers()};adminClose.onclick=()=>adminPanel.style.display='none';
 const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
-async function loadUsers(){usersWrap.innerHTML='جاري التحميل...';try{const r=await api('users'),d=await r.json();if(!r.ok){usersWrap.textContent=d.message||'غير مصرح';return}const a=d.users||[];usersWrap.innerHTML=a.length?'<table class="users-table"><thead><tr><th>الاسم</th><th>البريد</th><th>الحالة</th><th>الإجراء</th></tr></thead><tbody>'+a.map(u=>'<tr><td>'+esc(u.name)+'</td><td>'+esc(u.email)+'</td><td><span class="status-pill status-'+esc(u.status)+'">'+({approved:'مقبول',rejected:'مرفوض',pending:'قيد الانتظار'}[u.status]||u.status)+'</span></td><td><div class="admin-actions">'+(u.status!=='approved'?'<button class="approve" onclick="changeUser(\\''+u.id+'\\',\\'approved\\')">قبول</button>':'')+(u.status!=='rejected'?'<button class="reject" onclick="changeUser(\\''+u.id+'\\',\\'rejected\\')">رفض</button>':'')+'<button class="change-pass" onclick="changePassword(\\''+u.id+'\\')">تغيير الرقم السري</button><button class="delete-user" onclick="deleteUser(\\''+u.id+'\\')">حذف الحساب</button></div></td></tr>').join('')+'</tbody></table>':'<p style="text-align:center">لا توجد حسابات أخرى.</p>'}catch{usersWrap.textContent='تعذر تحميل المستخدمين.'}}
-window.changeUser=async(id,status)=>{const r=await api('status',{method:'POST',body:JSON.stringify({id,status})});const d=await r.json();adminMsg.textContent=d.message||'تم تحديث الحالة.';loadUsers()};
-window.changePassword=async id=>{const p=prompt('أدخل الرقم السري الجديد:');if(p===null)return;const r=await api('password',{method:'POST',body:JSON.stringify({id,password:p})});const d=await r.json();adminMsg.textContent=d.message||'تم تحديث الرقم السري.';loadUsers()};
-window.deleteUser=async id=>{if(!confirm('هل أنت متأكد من حذف الحساب نهائياً؟'))return;const r=await api('user?id='+encodeURIComponent(id),{method:'DELETE'});const d=await r.json();adminMsg.textContent=d.message||'تم حذف الحساب.';loadUsers()};
+async function loadUsers(){
+  usersWrap.innerHTML='جاري التحميل...';
+  try{
+    const r=await api('users'),d=await r.json();
+    if(!r.ok){usersWrap.textContent=d.message||'غير مصرح';return}
+    const a=d.users||[];
+    if(!a.length){usersWrap.innerHTML='<p style="text-align:center">لا توجد حسابات أخرى.</p>';return}
+    usersWrap.innerHTML='<table class="users-table"><thead><tr><th>الاسم</th><th>البريد</th><th>الحالة</th><th>الإجراء</th></tr></thead><tbody>'+a.map(u=>{
+      const approve=u.status!=='approved'?'<button class="approve" data-action="status" data-id="'+esc(u.id)+'" data-status="approved">قبول</button>':'';
+      const reject=u.status!=='rejected'?'<button class="reject" data-action="status" data-id="'+esc(u.id)+'" data-status="rejected">رفض</button>':'';
+      return '<tr><td>'+esc(u.name)+'</td><td>'+esc(u.email)+'</td><td><span class="status-pill status-'+esc(u.status)+'">'+({approved:'مقبول',rejected:'مرفوض',pending:'قيد الانتظار'}[u.status]||u.status)+'</span></td><td><div class="admin-actions">'+approve+reject+'<button class="change-pass" data-action="password" data-id="'+esc(u.id)+'">تغيير الرقم السري</button><button class="delete-user" data-action="delete" data-id="'+esc(u.id)+'">حذف الحساب</button></div></td></tr>';
+    }).join('')+'</tbody></table>';
+    usersWrap.querySelectorAll('[data-action="status"]').forEach(b=>b.onclick=()=>changeUser(b.dataset.id,b.dataset.status));
+    usersWrap.querySelectorAll('[data-action="password"]').forEach(b=>b.onclick=()=>changePassword(b.dataset.id));
+    usersWrap.querySelectorAll('[data-action="delete"]').forEach(b=>b.onclick=()=>deleteUser(b.dataset.id));
+  }catch(e){usersWrap.textContent='تعذر تحميل المستخدمين.'}
+}
+async function changeUser(id,status){
+  const r=await api('status',{method:'POST',body:JSON.stringify({id,status})});
+  const d=await r.json();
+  adminMsg.textContent=d.message||'تم تحديث الحالة.';
+  loadUsers();
+}
+async function changePassword(id){
+  const p=prompt('أدخل الرقم السري الجديد:');
+  if(p===null)return;
+  const r=await api('password',{method:'POST',body:JSON.stringify({id,password:p})});
+  const d=await r.json();
+  adminMsg.textContent=d.message||'تم تحديث الرقم السري.';
+  loadUsers();
+}
+async function deleteUser(id){
+  if(!confirm('هل أنت متأكد من حذف الحساب نهائياً؟'))return;
+  const r=await api('user?id='+encodeURIComponent(id),{method:'DELETE'});
+  const d=await r.json();
+  adminMsg.textContent=d.message||'تم حذف الحساب.';
+  loadUsers();
+}
 check();
 </script></body></html><!-- Supabase removed: portal is independent -->
