@@ -47,10 +47,14 @@ async function changePassword(id){
 }
 async function deleteUser(id){
   if(!confirm('هل أنت متأكد من حذف الحساب نهائياً؟'))return;
-  const r=await api('user?id='+encodeURIComponent(id),{method:'DELETE'});
-  const d=await r.json();
-  adminMsg.textContent=d.message||'تم حذف الحساب.';
-  loadUsers();
+  try{
+    const r=await api('user',{method:'DELETE',body:JSON.stringify({id})});
+    const d=await r.json();
+    adminMsg.textContent=d.message||'تم حذف الحساب.';
+    if(r.ok) await loadUsers();
+  }catch{
+    adminMsg.textContent='تعذر الاتصال بالخادم.';
+  }
 }
 check();
 </script></body></html><!-- Supabase removed: portal is independent -->
