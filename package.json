@@ -1,1 +1,1 @@
-{"name":"maarefa-portal","private":true,"version":"1.0.0","engines":{"node":">=20"},"dependencies":{"@neondatabase/serverless":"^1.0.2"}}
+{"name":"maarefa-portal","private":true,"version":"1.0.0","type":"module","engines":{"node":">=20"},"dependencies":{"@neondatabase/serverless":"^1.0.2"}}
