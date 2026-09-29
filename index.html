@@ -48,7 +48,7 @@ async function changePassword(id){
 async function deleteUser(id){
   if(!confirm('هل أنت متأكد من حذف الحساب نهائياً؟'))return;
   try{
-    const r=await api('user',{method:'DELETE',body:JSON.stringify({id})});
+    const r=await fetch('/api/auth?action=user&id='+encodeURIComponent(id),{method:'DELETE',credentials:'include'});
     const d=await r.json();
     adminMsg.textContent=d.message||'تم حذف الحساب.';
     if(r.ok) await loadUsers();
